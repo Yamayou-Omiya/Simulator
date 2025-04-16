@@ -23,10 +23,10 @@ public class zx120Controller : MonoBehaviour
     private float bucketUpperLimit = Mathf.Deg2Rad * 143.0f;
     private float bucketLowerLimit = Mathf.Deg2Rad * -33f;
 
-    public static float boomDirection = 0.0f;
-    public static float swingDirection = 0.0f;
-    public static float armDirection = 0.0f;
-    public static float bucketDirection = 0.0f;
+    public static float boomDirection = 1.0f;
+    public static float swingDirection = 1.0f;
+    public static float armDirection = 1.0f;
+    public static float bucketDirection = 1.0f;
     public static float leftWheel = 0.0f;
     public static float rightWheel = 0.0f;
     private float translationVelocity = 2.5f;
@@ -49,14 +49,27 @@ public class zx120Controller : MonoBehaviour
 
     public GameObject DriverCamera;
 
-    Float64Msg boomMsg = new Float64Msg() { data = -0.70f };
-    Float64Msg swingMsg = new Float64Msg() { data = 0.0f };
-    Float64Msg armMsg = new Float64Msg() { data = 1.57f };
-    Float64Msg bucketMsg = new Float64Msg() { data = 0.79f };
+    public float initialBoomAngle;
+    public float initialSwingAngle;
+    public float initialArmAngle;
+    public float initialBucketAngle;
+
+    private bool initialPublishDone = false;
+
+    private float initialInterval = 0.5f;
+
+    Float64Msg boomMsg;
+    Float64Msg swingMsg;
+    Float64Msg armMsg;
+    Float64Msg bucketMsg;
     TwistMsg tracksMsg = new TwistMsg();
 
     void Start()
     {
+        boomMsg = new Float64Msg() { data = initialBoomAngle };
+        swingMsg = new Float64Msg() { data = initialSwingAngle };
+        armMsg = new Float64Msg() { data = initialArmAngle };
+        bucketMsg = new Float64Msg() { data = initialBucketAngle };
         ros = ROSConnection.GetOrCreateInstance();
         ros = ROSConnection.GetOrCreateInstance();
         ros.RegisterPublisher<Float64Msg>(boomTopic);
@@ -66,12 +79,15 @@ public class zx120Controller : MonoBehaviour
         ros.RegisterPublisher<TwistMsg>(tracksTopic);
 
         ros.Publish(boomTopic, boomMsg);
-        ros.Publish(boomTopic, boomMsg);
         ros.Publish(swingTopic, swingMsg);
         ros.Publish(armTopic, armMsg);
+        ros.Publish(bucketTopic, bucketMsg);
 
         GameObject box = GameObject.Find("zx120/base_link/Collisions/unnamed/Box");
         box.SetActive(true);
+
+        
+
     }
 
     void Update()
@@ -86,33 +102,44 @@ public class zx120Controller : MonoBehaviour
         if (isControllerControl) InputControllers();
         if (isProControllerControl) InputProControllers();
 
+        //initialIntervalの間はinitialPublishDoneをfalseにしておく
+        if (!initialPublishDone)
+        {
+            initialInterval -= Time.deltaTime;
+            if (initialInterval <= 0)
+            {
+                initialPublishDone = true;
+            }
+        }
+
         UpdateAndPublishMessages();
+
 
     }
 
     void UpdateAndPublishMessages()
     {
-        if (boomDirection != 0)
+        if (boomDirection != 0 || !initialPublishDone)
         {
             boomMsg.data += boomDirection * boomIncreaseCoefficient * Time.deltaTime;
             boomMsg.data = (float)Mathf.Clamp((float)boomMsg.data, boomLowerLimit, boomUpperLimit);
             ros.Publish(boomTopic, boomMsg);
         }
 
-        if (swingDirection != 0)
+        if (swingDirection != 0 || !initialPublishDone)
         {
             swingMsg.data += swingDirection * swingCoefficient * Time.deltaTime;
             ros.Publish(swingTopic, swingMsg);
         }
 
-        if (armDirection != 0)
+        if (armDirection != 0 || !initialPublishDone)
         {
             armMsg.data += armDirection * armIncreaseCoefficient * Time.deltaTime;
             armMsg.data = (float)Mathf.Clamp((float)armMsg.data, armLowerLimit, armUpperLimit);
             ros.Publish(armTopic, armMsg);
         }
 
-        if (bucketDirection != 0)
+        if (bucketDirection != 0 || !initialPublishDone)
         {
             bucketMsg.data += bucketDirection * bucketIncreaseCoefficient * Time.deltaTime;
             bucketMsg.data = (float)Mathf.Clamp((float)bucketMsg.data, bucketLowerLimit, bucketUpperLimit);
@@ -123,6 +150,8 @@ public class zx120Controller : MonoBehaviour
         tracksMsg.linear.x = translationVelocity * (leftWheel + rightWheel) / 2.0f;
         tracksMsg.angular.z = rotationVelocity * (rightWheel - leftWheel);
         ros.Publish(tracksTopic, tracksMsg);
+
+        initialPublishDone = true;
 
     }
 

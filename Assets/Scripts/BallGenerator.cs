@@ -11,12 +11,15 @@ public class BallGenerator : MonoBehaviour
     [SerializeField] private float areaDepth = 5f;
     [SerializeField] private float areaWidth = 3f;
     [SerializeField] private float areaHeight = 4f;
-    [SerializeField] private Vector3 areaCenter = new Vector3(0f, 2f, -9.75f);
+    [SerializeField] private Vector3 areaCenter;
+    
+    public GameObject CenterObject;
 
     private float time = 0.0f;
 
     private void Start()
     {
+        areaCenter = CenterObject.transform.position;
         GenerateBalls();
     }
 
