@@ -10,7 +10,7 @@ public class zx120Controller : MonoBehaviour
     ROSConnection ros;
     private float boomIncreaseCoefficient = 0.271f;
     private float boomDecreaseCoefficient = 0.216f;
-    private float swingCoefficient = 1.279f;
+    private float swingCoefficient = 0.5f;
     private float armIncreaseCoefficient = 0.482f;
     private float armDecreaseCoefficient = 0.670f;
     private float bucketIncreaseCoefficient = 0.991f;
@@ -29,7 +29,7 @@ public class zx120Controller : MonoBehaviour
     public static float bucketDirection = 1.0f;
     public static float leftWheel = 0.0f;
     public static float rightWheel = 0.0f;
-    private float translationVelocity = 2.5f;
+    private float translationVelocity = 6.0f;
     private float rotationVelocity = 2.0f;
 
     public string boomTopic = "zx120/boom/cmd";
@@ -184,15 +184,20 @@ public class zx120Controller : MonoBehaviour
 
         if (Input.GetKey("t") ^ Input.GetKey("g"))
         {
-            if (Input.GetKey("t")) leftWheel = 1.0f;
-            else if (Input.GetKey("g")) leftWheel = -1.0f;
+            if (Input.GetKey("t")) {
+                leftWheel = 1.0f;
+                rightWheel = 1.0f;
+            }else if (Input.GetKey("g")){
+                leftWheel = -1.0f;
+                rightWheel = -1.0f;
+            } 
         }
 
-        if (Input.GetKey("y") ^ Input.GetKey("h"))
-        {
-            if (Input.GetKey("y")) rightWheel = 1.0f;
-            else if (Input.GetKey("h")) rightWheel = -1.0f;
-        }
+        // if (Input.GetKey("y") ^ Input.GetKey("h"))
+        // {
+        //     if (Input.GetKey("y")) rightWheel = 1.0f;
+        //     else if (Input.GetKey("h")) rightWheel = -1.0f;
+        // }
     }
 
     void InputControllers()
