@@ -40,6 +40,7 @@ public class zx120Controller : MonoBehaviour
 
     public bool isKeyboardControl = false;
     public bool isControllerControl = false;
+    public bool isControllerControlKR = false; // KRのコントローラー用
     public bool isProControllerControl = false;
 
     private bool functionSwitch = false;
@@ -53,6 +54,11 @@ public class zx120Controller : MonoBehaviour
     public float initialSwingAngle;
     public float initialArmAngle;
     public float initialBucketAngle;
+
+    public float boomBottunAngle = 15.0f;
+    private float boomBottunAngleNow = 0.0f;
+
+    public float boomBottunAngleRate = 0.482f;
 
     private bool initialPublishDone = false;
 
@@ -100,6 +106,7 @@ public class zx120Controller : MonoBehaviour
 
         if (isKeyboardControl) InputKeys();
         if (isControllerControl) InputControllers();
+        if (isControllerControlKR) InputControllersKR();
         if (isProControllerControl) InputProControllers();
 
         //initialIntervalの間はinitialPublishDoneをfalseにしておく
@@ -155,6 +162,26 @@ public class zx120Controller : MonoBehaviour
 
     }
 
+    void UpBoomMessages(){
+        if(boomBottunAngleNow < boomBottunAngle){
+            boomBottunAngleNow += boomBottunAngleRate * Time.deltaTime / Mathf.Deg2Rad;
+            boomMsg.data += boomBottunAngleRate * Time.deltaTime;
+            boomMsg.data = (float)Mathf.Clamp((float)boomMsg.data, boomLowerLimit, boomUpperLimit);
+            ros.Publish(boomTopic, boomMsg);
+            Debug.Log("Up");
+        }
+    }
+
+    void DownBoomMessages(){
+        if(0<boomBottunAngleNow){
+            boomBottunAngleNow -= boomBottunAngleRate * Time.deltaTime / Mathf.Deg2Rad;
+            boomMsg.data -= boomBottunAngleRate * Time.deltaTime;
+            boomMsg.data = (float)Mathf.Clamp((float)boomMsg.data, boomLowerLimit, boomUpperLimit);
+            ros.Publish(boomTopic, boomMsg);
+            Debug.Log("Down");
+        }
+    }
+
     void InputKeys()
     {
         if (Input.GetKey("i") ^ Input.GetKey("k"))
@@ -208,6 +235,34 @@ public class zx120Controller : MonoBehaviour
         bucketDirection = Input.GetAxis("Joystick3Horizontal");
         leftWheel = Input.GetAxis("Joystick1Vertical1");
         rightWheel = Input.GetAxis("Joystick1Vertical2");
+    }
+
+    void InputControllersKR()
+    {
+        boomDirection = Input.GetAxis("Joystick2Vertical");
+        swingDirection = -Input.GetAxis("Joystick2Horizontal");
+        //armDirection = Input.GetAxis("Joystick2Vertical");
+        //bucketDirection = Input.GetAxis("Joystick3Horizontal");
+        //Input.GetAxis("Joystick3Vertical")が0.3以上のときは1を代入，-0.3以下のときは-1を代入それ以外は0を代入
+        float joystickValue = Input.GetAxis("Joystick3Vertical");
+        if (joystickValue >= 0.3f)
+        {
+            leftWheel = 1.0f;
+            rightWheel = 1.0f;
+        }
+        else if (joystickValue <= -0.3f)
+        {
+            leftWheel = -1.0f;
+            rightWheel = -1.0f;
+        }
+        else
+        {
+            leftWheel = 0.0f;
+            rightWheel = 0.0f;
+        }
+        //Joystick3Buttonが押しっぱのときの処理
+        if (Input.GetButton("Joystick3Button")) UpBoomMessages();
+        else DownBoomMessages();
     }
 
     void InputProControllers()
